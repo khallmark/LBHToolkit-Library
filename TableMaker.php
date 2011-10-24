@@ -59,6 +59,7 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	 */
 	public function direct($params)
 	{
+		$this->setDefaultParams();
 		if ($params !== NULL)
 		{
 			$this->setParams($params);
@@ -92,6 +93,12 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			$this->count = LBHToolkit_TableMaker::PAGE_SIZE;
 		}
 		
+	}
+	
+	public function setDefaultParams()
+	{
+		$this->id = 'id';
+		$this->table_name = 'tablemaker';
 	}
 	
 	/**
@@ -208,15 +215,19 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		$pagingInfo->setTotalCount($total_count);
 		
 		$html = sprintf(
-			'<table class="%s"><thead>%s</thead><tbody>%s</tbody></table>%s', 
+			'<table id="%s" class="%s"><thead id="%s-thead">%s</thead><tbody id="%s-tbody">%s</tbody></table>%s', 
+			$this->table_name,
 			$this->class, 
+			$this->table_name,
 			$this->renderHeader($data, $pagingInfo), 
+			$this->table_name,
 			$this->render($data, $pagingInfo), 
 			$pagingInfo->render($data, $pagingInfo)
 		);
 		
 		return $html;
 	}
+	
 	
 	public function renderEmpty()
 	{
@@ -239,10 +250,11 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		
 		foreach ($columns AS $column)
 		{
+			$column->id = $this->id;
 			$html = $html . $column->renderHeader($data, $pagingInfo);
 		}
 		
-		$html = sprintf('<tr>%s</tr>', $html);
+		$html = sprintf('<tr id="%s-header">%s</tr>', $this->table_name, $html);
 		
 		return $html;
 	}
@@ -261,19 +273,21 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		{
 			if (is_array($row))
 			{
-				$row = (object) $row;
+				$row = (object)$row;
 			}
 			
 			$row_html = '';
 			foreach ($columns AS $column)
 			{
+				$column->id = $this->id;
 				$column->template_vars = $this->_template_vars;
-				
 				$column_id = $column->column_id;
-				$row_html  = $row_html . $column->render($row, $pagingInfo);
+				
+				$row_html = $row_html . $column->render($row, $pagingInfo);
 			}
+			$id = $this->_dataValue($row, $this->id);
 			
-			$html = $html . sprintf('<tr id="tr_%s">%s</tr>', $row->id, $row_html);
+			$html = $html . sprintf('<tr id="%s-row-%s">%s</tr>', $this->table_name, $id, $row_html);
 		}
 		
 		return $html;
@@ -345,11 +359,26 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		{
 			throw new Memberfuse_Rest_Exception('Params must be an array.');
 		}
-		$this->_params = $new_params;
+		$this->_params = array_merge($this->_params, $new_params);
 	}
 	
 	public function getAdapter()
 	{
 		return $this->_adapter;
+	}
+	
+	protected function _dataValue(&$data, $column, $value = NULL)
+	{
+		// Get the data value
+		if (is_object($data) && isset($data->$column))
+		{
+			$value = (string)$data->$column;
+		}
+		else if (is_array($data) && isset($data[$column]))
+		{
+			$value = (string)$data[$column];
+		}
+		
+		return $value;
 	}
 }

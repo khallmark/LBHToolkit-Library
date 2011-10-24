@@ -97,7 +97,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		
 		$decorator->identifier = $alias;
 		
-		$this->_decorators[$aliabrbs] = $decorator;
+		$this->_decorators[$alias] = $decorator;
 	}
 	
 	/**
@@ -120,6 +120,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		
 		// Get the header attributes
 		$attribs = $this->getHeaderAttributes();
+		$attribs['id'] = $this->column_id;
 		
 		// Allow a custom function to process the header information
 		if($this->header_function && method_exists($data, $this->header_function))
@@ -151,18 +152,10 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		// Get the column id
 		$column = $this->column_id;
 		
-		// Init html
-		$html = '';
+		$id = $this->_dataValue($data, $this->id);
 		
-		// Get the data value
-		if (is_object($data) && isset($data->$column))
-		{
-			$html = (string)$data->$column;
-		}
-		else if (is_array($data) && isset($data[$column]))
-		{
-			$html = (string)$data[$column];
-		}
+		// Init html
+		$html = $this->_dataValue($data, $column, '');
 		
 		// Default arguments passed to function/view_helper/template
 		$default_arguments = array(
@@ -173,6 +166,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		
 		// Get the html attributes to add to this column
 		$attribs = $this->getBodyAttributes();
+		$attribs['id'] = $this->column_id . '-' . $id;
 		
 		if (count($this->getDecorators()))
 		{
@@ -182,39 +176,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 				$html = $decorator->format($html, $default_arguments);
 			}
 		}
-
-		/*
-		// Render the body function
-		if ($this->body_function)
-		{
-			// Get the body function
-			$function = $this->body_function['name'];
-			
-			// If it's an array...
-			if (is_array($function))
-			{
-				// Check to make sure one of our special keys isn't used
-				// in the callable array
-				$function = $this->_parseParams($function, $default_arguments);
-			}
-			
-			$body_function_params = array($default_arguments);
-			if (isset($this->body_function['params']))
-			{
-				// Use them
-				$body_function_params = $this->_parseParams($this->body_function['params'], $default_arguments);
-			}
-			
-			if (!is_callable($function))
-			{
-				$message = sprintf('The body function on %s could not be called.', $column);
-				throw new LBHToolkit_TableMaker_Exception($message);
-			}
-			
-			$html = call_user_func_array($function, $body_function_params);
-			
-		}*/
-
+		
 		$html = sprintf('<td%s>%s</td>', $this->_parseAttribs($attribs), $html);
 		
 		return $html;

@@ -53,4 +53,19 @@ abstract class LBHToolkit_TableMaker_Abstract extends LBHToolkit_Base implements
 		
 		return $params;
 	}
+	
+	protected function _dataValue(&$data, $column, $value = NULL)
+	{
+		// Get the data value
+		if (is_object($data) && isset($data->$column))
+		{
+			$value = (string)$data->$column;
+		}
+		else if (is_array($data) && isset($data[$column]))
+		{
+			$value = (string)$data[$column];
+		}
+		
+		return $value;
+	}
 }
