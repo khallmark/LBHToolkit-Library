@@ -77,7 +77,7 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 		$sort = $data;
 		
 		// Render the link
-		$link = $this->renderLink($sort, $this->page);
+		$link = $this->renderLink($sort, $this->page, TRUE);
 		
 		// Return the link
 		return $link;
@@ -199,15 +199,9 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 	 * @return void
 	 * @author Kevin Hallmark
 	 */
-	public function renderLink($sort = NULL, $page = 1)
+	public function renderLink($sort = NULL, $page = 1, $is_header = FALSE)
 	{
-		// If there is no period in the sort string, assemble it
-		if (strpos($sort, '.') === FALSE)
-		{
-			$sort = sprintf('%s.%s', $sort, $this->getOrder($sort));
-		}
-		
-		$order = $this->getOrder($sort);
+		$order = $this->getOrder($sort, $is_header);
 		
 		// Get the page number
 		$page = $this->getPage($sort, $page);
@@ -264,16 +258,28 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 	 * @return void
 	 * @author Kevin Hallmark
 	 */
-	public function getOrder($sort)
+	public function getOrder($sort, $swap = FALSE)
 	{
 		// If the sorts match, and the order is desc, then reorder to asc
-		if($this->sort == $sort && $this->order == 'desc')
+		if($this->sort == $sort)
 		{
-			return 'asc';
+			if ($swap)
+			{
+				if ($this->order == 'asc')
+				{
+					return 'desc';
+				}
+				else
+				{
+					return 'asc';
+				}
+			}
+			
+			return $this->order;
 		}
 		
 		// Return the default
-		return 'desc';
+		return $this->default_order;
 	}
 	
 	/**
