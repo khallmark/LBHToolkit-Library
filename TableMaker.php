@@ -215,7 +215,7 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		$pagingInfo->setTotalCount($total_count);
 		
 		$html = sprintf(
-			'<table id="%s" class="%s"><thead id="%s-thead">%s</thead><tbody id="%s-tbody">%s</tbody></table>%s', 
+			'<div class="tablemaker"><table id="%s" class="%s"><thead id="%s-thead">%s</thead><tbody id="%s-tbody">%s</tbody></table>%s</div>', 
 			$this->table_name,
 			$this->class, 
 			$this->table_name,
