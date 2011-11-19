@@ -30,11 +30,16 @@ class LBHToolkit_Amazon
 	 * @return void
 	 * @author Kevin Hallmark
 	 */
-	public static function getService()
+	public static function getService($api_key = NULL, $secret_key = NULL, $country = 'US')
 	{
 		if (LBHToolkit_Amazon::$_amazon == NULL)
 		{
-			LBHToolkit_Amazon::$_amazon = new LBHToolkit_Service_Amazon('', '', '');
+			if ($api_key === NULL || $secret_key === NULL)
+			{
+				throw new LBHToolkit_Amazon_Exception('Missing api key or api secret');
+			}
+			
+			LBHToolkit_Amazon::$_amazon = new LBHToolkit_Service_Amazon($api_key, $country, $secret_key);
 		}
 		
 		return LBHToolkit_Amazon::$_amazon;

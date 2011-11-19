@@ -97,7 +97,7 @@ class LBHToolkit_TableMaker_Adapter_Doctrine2 extends LBHToolkit_TableMaker_Adap
 	{
 		$query = clone $this->query;
 		
-		$query->select($query->expr()->count('book'));
+		$query->select($query->expr()->count('song'));
 		
 		$count = $query->getQuery()->getSingleScalarResult();
 		

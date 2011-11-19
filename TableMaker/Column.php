@@ -24,6 +24,12 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 {
 	protected $_decorators = array();
 	
+	
+	public function setDefaultParams()
+	{
+		$this->search_type = '=';
+	}
+	
 	/**
 	 * Takes an array of parameters and validates them. Called from the constructor
 	 *
@@ -46,6 +52,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 			$this->label = ucwords(str_replace('_', ' ', $this->column_id));
 		}
 		
+		// If decorators were passed, run them through the decorator function
 		if ($this->decorators)
 		{
 			foreach ($this->decorators AS $name => $decorator)
@@ -55,6 +62,14 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		}
 	}
 	
+	/**
+	 * Adds a decorator to the column
+	 *
+	 * @param string $alias 
+	 * @param string $decorator 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
 	public function addDecorator($alias, $decorator)
 	{
 		if (is_object($decorator))
@@ -183,6 +198,84 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 	}
 	
 	/**
+	 * Create the form element for this column and add it to the passed in form
+	 * object. 
+	 *
+	 * @param string $form 
+	 * @param string $value 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function processSearchField(Zend_Form &$form, $value = NULL)
+	{
+		// If this field is not searchable, don't do anything
+		if (!$this->isSearchable())
+		{
+			return;
+		}
+		
+		// Get the search field
+		$search_field = $this->search_field;
+		
+		// If it's a subclass of Zend_Form_Element_Abstract...
+		if (is_a($search_field, 'Zend_Form_Element'))
+		{
+			// Add that element
+			$element = $form->addElement($search_field);
+		}
+		else
+		{
+			// If it's only TRUE, do some default actions
+			if (is_bool($search_field))
+			{
+				$search_field = array();
+			}
+			
+			// The field name will be the column id
+			$name = $this->column_id;
+			
+			// By default it's a text field
+			$type = 'text';
+			
+			// If the 'type' field is set, use that instead
+			if (isset($search_field['type']))
+			{
+				$type = $search_field['type'];
+			}
+			
+			// If there is no label set, use the label for this column
+			if (!isset($search_field['label']))
+			{
+				$search_field['label'] = $this->label;
+			}
+			
+			// Set the value into the passed value
+			$search_field['value'] = $value;
+			
+			// Add the form element
+			$element = $form->addElement($type, $name, $search_field);
+		}
+		
+		return $element;
+	}
+	
+	/**
+	 * Is this field searchable or not.
+	 *
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function isSearchable()
+	{
+		if ($this->search_field !== NULL && $this->search_query !== NULL)
+		{
+			return TRUE;
+		}
+		
+		return FALSE;
+	}
+	
+	/**
 	 * This calculates any custom attributes you want on the header columns
 	 *
 	 * @return void
@@ -222,6 +315,12 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		return $attribs;
 	}
 	
+	/**
+	 * Return the decorators on this column
+	 *
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
 	public function getDecorators()
 	{
 		return $this->_decorators;
@@ -249,6 +348,14 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		return $attrib_str;
 	}
 	
+	/**
+	 * This function parses the parameters and replaces the special keys
+	 *
+	 * @param string $params 
+	 * @param string $replacements 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
 	protected function _parseParams($params, $replacements)
 	{
 		if (count($params))
