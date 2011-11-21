@@ -72,8 +72,7 @@ class LBHToolkit_TableMaker_Search_Form extends LBHToolkit_Form_Abstract
 					'open-tag' => 'HtmlTag'
 				), 
 				array(
-					'tag' => 'span', 
-					'class' => 'submit_btn',
+					'tag' => 'div', 
 				)
 			),
 		);
@@ -82,7 +81,7 @@ class LBHToolkit_TableMaker_Search_Form extends LBHToolkit_Form_Abstract
 			'submit', 
 			$label, 
 			array(
-				'decorators' => $decorators,
+				'decorators' => $decorators
 			)
 		);
 	}

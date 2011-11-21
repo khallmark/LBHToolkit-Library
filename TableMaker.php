@@ -127,6 +127,11 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		
 		$this->_columns[$column->column_id] = $column;
 		
+		if ($column->isSearchable())
+		{
+			$this->_searchable_fields[] = $column;
+		}
+		
 		return $column;
 	}
 	
@@ -207,16 +212,19 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		$this->render_started = TRUE;
 		
 		$query = $this->getRequest()->getQuery();
-		foreach ($this->_searchable_fields AS $column)
+		if (count($this->_searchable_fields))
 		{
-			if (isset($query[$column->column_id]))
+			foreach ($this->_searchable_fields AS $column)
 			{
-				$value = $query[$column->column_id];
-				
-				$this->getAdapter()->addFilter($column->search_query, $query[$column->column_id]);
+				if (isset($query[$column->column_id]))
+				{
+					$value = $query[$column->column_id];
+
+					$this->getAdapter()->addFilter($column->search_query, $query[$column->column_id]);
+				}
 			}
 		}
-		
+
 		$pagingInfo = $this->getPagingInfo();
 		
 		$total_count = $this->getAdapter()->getTotalCount();//$this->total_count;
