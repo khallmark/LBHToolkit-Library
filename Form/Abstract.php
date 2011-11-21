@@ -30,4 +30,26 @@ abstract class LBHToolkit_Form_Abstract extends Zend_Form
 	}
 	
 	public abstract function processSubmit();
+	
+	
+	
+	/**
+     * Load the default decorators
+     *
+     * @return Zend_Form
+     */
+    public function loadDefaultDecorators()
+    {
+        if ($this->loadDefaultDecoratorsIsDisabled()) {
+            return $this;
+        }
+
+        $decorators = $this->getDecorators();
+        if (empty($decorators)) {
+            $this->addDecorator('FormElements')
+                 ->addDecorator('HtmlTag', array('tag' => 'div', 'class' => 'lbhtoolkit-form'))
+                 ->addDecorator('Form');
+        }
+        return $this;
+    }
 }
