@@ -117,4 +117,23 @@ class LBHToolkit_TableMaker_Adapter_Doctrine2 extends LBHToolkit_TableMaker_Adap
 		
 		return $row->$primary_key;
 	}
+	
+	/**
+	 * Process the data based on the filters passed in the params.
+	 *
+	 * @param string $field 
+	 * @param string $type 
+	 * @param string $value 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function addFilter($query, $value)
+	{
+		if (strpos(strtolower($query), 'like') != FALSE)
+		{
+			$value = '%' . $value . '%';
+		}
+		
+		$this->query->addWhere($query, $value);
+	}
 }

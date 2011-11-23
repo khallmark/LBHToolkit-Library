@@ -103,6 +103,9 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	{
 		$this->id = 'id';
 		$this->table_name = 'tablemaker';
+		
+		$this->show_header = TRUE;
+		$this->show_pagination = TRUE;
 	}
 	
 	/**
@@ -237,14 +240,15 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		}
 		
 		$pagingInfo->setTotalCount($total_count);
+		$pagingInfo->column_count = count($this->_columns);
+		
+		$pagingInfo->show_pagination = $this->show_pagination;
 		
 		$html = sprintf(
-			'<div class="tablemaker"><table id="%s" class="%s"><thead id="%s-thead">%s</thead><tbody id="%s-tbody">%s</tbody></table>%s</div>', 
+			'<div class="tablemaker"><table id="%s" class="%s">%s%s%s</table></div>', 
 			$this->table_name,
 			$this->class, 
-			$this->table_name,
 			$this->renderHeader($data, $pagingInfo), 
-			$this->table_name,
 			$this->render($data, $pagingInfo), 
 			$pagingInfo->render($data, $pagingInfo)
 		);
@@ -300,6 +304,11 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			throw new LBHToolkit_TableMaker_Exception("I'm sorry Dave, I'm afraid I can't do that.. Please call renderTable().");
 		}
 		
+		if (!$this->show_header)
+		{
+			return;
+		}
+		
 		$columns = $this->_columns;
 		
 		if(count($columns) == 0)
@@ -313,7 +322,7 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			$html = $html . $column->renderHeader($data, $pagingInfo);
 		}
 		
-		$html = sprintf('<tr id="%s-header">%s</tr>', $this->table_name, $html);
+		$html = sprintf('<thead id="%s-thead"><tr id="%s-header">%s</tr></thead>', $this->table_name, $this->table_name, $html);
 		
 		return $html;
 	}
@@ -350,7 +359,7 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			}
 			$id = $this->_dataValue($row, $this->id);
 			
-			$html = $html . sprintf('<tr id="%s-row-%s">%s</tr>', $this->table_name, $id, $row_html);
+			$html = $html . sprintf('<tbody id="%s-tbody"><tr id="%s-row-%s">%s</tr></tbody>', $this->table_name,$this->table_name, $id, $row_html);
 		}
 		
 		return $html;
