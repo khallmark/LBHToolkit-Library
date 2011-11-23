@@ -45,7 +45,7 @@ abstract class LBHToolkit_Base implements Serializable
 		
 		if ($params !== NULL)
 		{
-			$this->setParams($params);
+			$this->setParams($params, TRUE);
 		}
 		
 		if (method_exists($this, 'validateParams'))
@@ -139,13 +139,21 @@ abstract class LBHToolkit_Base implements Serializable
 	 * @return void
 	 * @author Kevin Hallmark
 	 */
-	public function setParams($new_params)
+	public function setParams($new_params, $merge = FALSE)
 	{
 		if (!is_array($new_params))
 		{
-			throw new Memberfuse_Rest_Exception('Params must be an array.');
+			throw new Memberfuse_Rest_Doctrine_Exception('Params must be an array.');
 		}
-		$this->_params = $new_params;
+		
+		if ($merge)
+		{
+			$this->_params = array_merge($this->_params, $new_params);
+		}
+		else
+		{
+			$this->_params = $new_params;
+		}
 	}
 	
 	
