@@ -76,7 +76,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		{
 			if (!($decorator instanceof LBHToolkit_TableMaker_Decorator_Interface))
 			{
-				throw new Memberfuse_Rest_Doctrine_Exception("The object you added for $alias doesn't conform to the adapter interface.");
+				throw new LBHToolkit_TableMaker_Exception("The object you added for $alias doesn't conform to the adapter interface.");
 			}
 		}
 		else

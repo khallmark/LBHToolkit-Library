@@ -143,7 +143,7 @@ abstract class LBHToolkit_Base implements Serializable
 	{
 		if (!is_array($new_params))
 		{
-			throw new Memberfuse_Rest_Doctrine_Exception('Params must be an array.');
+			throw new LBHToolkit_Exception('Params must be an array.');
 		}
 		
 		if ($merge)
