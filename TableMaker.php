@@ -5,7 +5,7 @@
  * 
  * The TableMaker is used to generate an HTML table from a set of array accessible
  * data. It is a Zend_Controller_Action_Helper that works in conjunction with the
- * Zend request object in order to drive it's parameters.
+ * Zend request object in order to drive its parameters.
  * 
  * LICENSE
  * 
@@ -50,6 +50,8 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	
 	protected $_template_vars = array();
 	
+	protected $_searchable_fields = array();
+	
 	/**
 	 * Allows this plugin to be instantiated more easily from the HelperBroker
 	 *
@@ -66,6 +68,8 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		}
 		
 		$this->validateParams($params);
+		
+		$this->render_started = FALSE;
 		
 		return $this;
 	}
@@ -99,6 +103,9 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	{
 		$this->id = 'id';
 		$this->table_name = 'tablemaker';
+		
+		$this->show_header = TRUE;
+		$this->show_pagination = TRUE;
 	}
 	
 	/**
@@ -122,6 +129,11 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		}
 		
 		$this->_columns[$column->column_id] = $column;
+		
+		if ($column->isSearchable())
+		{
+			$this->_searchable_fields[] = $column;
+		}
 		
 		return $column;
 	}
@@ -176,7 +188,6 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		
 		$paging['action'] = $this->getActionName();
 		
-		
 		$paging['query'] = $this->getRequest()->getQuery();
 		
 		$pagingInfo = new LBHToolkit_TableMaker_Paging($paging);
@@ -201,6 +212,22 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	
 	public function renderTable()
 	{
+		$this->render_started = TRUE;
+		
+		$query = $this->getRequest()->getQuery();
+		if (count($this->_searchable_fields))
+		{
+			foreach ($this->_searchable_fields AS $column)
+			{
+				if (isset($query[$column->column_id]))
+				{
+					$value = $query[$column->column_id];
+
+					$this->getAdapter()->addFilter($column->search_query, $query[$column->column_id]);
+				}
+			}
+		}
+
 		$pagingInfo = $this->getPagingInfo();
 		
 		$total_count = $this->getAdapter()->getTotalCount();//$this->total_count;
@@ -213,14 +240,15 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		}
 		
 		$pagingInfo->setTotalCount($total_count);
+		$pagingInfo->column_count = count($this->_columns);
+		
+		$pagingInfo->show_pagination = $this->show_pagination;
 		
 		$html = sprintf(
-			'<div class="tablemaker"><table id="%s" class="%s"><thead id="%s-thead">%s</thead><tbody id="%s-tbody">%s</tbody></table>%s</div>', 
+			'<div class="tablemaker"><table id="%s" class="%s">%s%s%s</table></div>', 
 			$this->table_name,
 			$this->class, 
-			$this->table_name,
 			$this->renderHeader($data, $pagingInfo), 
-			$this->table_name,
 			$this->render($data, $pagingInfo), 
 			$pagingInfo->render($data, $pagingInfo)
 		);
@@ -228,6 +256,36 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		return $html;
 	}
 	
+	public function renderForm()
+	{
+		if (count($this->_columns) == 0)
+		{
+			return NULL;
+		}
+		
+		$query = $this->getRequest()->getQuery();
+		
+		$form = new LBHToolkit_TableMaker_Search_Form();
+		
+		$form->setAction($this->getActionName());
+		
+		$columns = $this->_columns;
+		foreach ($columns AS $column)
+		{
+			$value = NULL;
+			
+			if (isset($query[$column->column_id]))
+			{
+				$value = $query[$name];
+			}
+			
+			$column->processSearchField($form, $value);
+		}
+		
+		$form->addSubmit();
+		
+		return sprintf('<div class="tablemaker-search-form"><h3 class="tablemaker-search-title">Search %s</h3>%s</div>', $this->label, $form->render());
+	}
 	
 	public function renderEmpty()
 	{
@@ -241,6 +299,16 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	
 	public function renderHeader(&$data, LBHToolkit_TableMaker_Paging $pagingInfo)
 	{
+		if (!$this->render_started)
+		{
+			throw new LBHToolkit_TableMaker_Exception("I'm sorry Dave, I'm afraid I can't do that.. Please call renderTable().");
+		}
+		
+		if (!$this->show_header)
+		{
+			return;
+		}
+		
 		$columns = $this->_columns;
 		
 		if(count($columns) == 0)
@@ -254,7 +322,7 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			$html = $html . $column->renderHeader($data, $pagingInfo);
 		}
 		
-		$html = sprintf('<tr id="%s-header">%s</tr>', $this->table_name, $html);
+		$html = sprintf('<thead id="%s-thead"><tr id="%s-header">%s</tr></thead>', $this->table_name, $this->table_name, $html);
 		
 		return $html;
 	}
@@ -267,6 +335,10 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	 */
 	public function render(&$data, LBHToolkit_TableMaker_Paging $pagingInfo)
 	{
+		if (!$this->render_started)
+		{
+			throw new LBHToolkit_TableMaker_Exception("I'm sorry Dave, I'm afraid I can't do that. Please call renderTable().");
+		}
 		
 		$columns = $this->_columns;
 		foreach ($data AS $row)
@@ -287,7 +359,7 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			}
 			$id = $this->_dataValue($row, $this->id);
 			
-			$html = $html . sprintf('<tr id="%s-row-%s">%s</tr>', $this->table_name, $id, $row_html);
+			$html = $html . sprintf('<tbody id="%s-tbody"><tr id="%s-row-%s">%s</tr></tbody>', $this->table_name,$this->table_name, $id, $row_html);
 		}
 		
 		return $html;
@@ -333,6 +405,17 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	public function __isset($key)
 	{
 		return isset($this->_params[$key]);
+	}
+	
+	/**
+	 * Prints out the table if you don't do anything else.
+	 *
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function __toString()
+	{
+		return $this->renderTable();
 	}
 	
 	/**

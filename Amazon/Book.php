@@ -57,6 +57,7 @@ class LBHToolkit_Amazon_Book
 		// Find the book, searching the keywords for the ISBN
 		$results = $amazon->itemSearch($params);
 		//vdd($results->totalResults());
+
 		// Initialize the matches
 		$matches = array();
 		
@@ -85,7 +86,7 @@ class LBHToolkit_Amazon_Book
 		);
 		
 		$params = array_merge($default_params, $params);
-		//var_dump($params);
+		var_dump($params);
 		$book = $amazon->itemLookup($asin, $params);
 		
 		return new LBHToolkit_Amazon_Book($book);
@@ -143,12 +144,6 @@ class LBHToolkit_Amazon_Book
 		  }
 		}
 		
-		$offers = $offer_result->Offers;
-		
-		if (count($offers) > $count)
-		{
-			$offers = array_slice($offers, 0, $count);
-		}
 		
 		return $prices;	
 	}

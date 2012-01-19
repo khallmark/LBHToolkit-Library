@@ -22,5 +22,71 @@
 
 class LBHToolkit_Form_Element_Text extends Zend_Form_Element_Text
 {
+	/*
+	protected $_decorators = array(
+		'ViewHelper',
+		'Errors',
+		'Description',
+//		array('Label', array()),
+/*		,
+		array(
+			
+		),*/
+	//);
+	
+	/**
+	 * Load default decorators
+	 *
+	 * @return Zend_Form_Element
+	 */
+	public function loadDefaultDecorators()
+	{
+		if ($this->loadDefaultDecoratorsIsDisabled()) {
+			return $this;
+		}
 
+		$decorators = $this->getDecorators();
+		if (empty($decorators)) {
+			$getId = create_function('$decorator',
+									 'return $decorator->getElement()->getId()
+											 . "-element";');
+			$this->addDecorator('ViewHelper')
+					->addDecorator('Errors')
+					->addDecorator('Description', array('tag' => 'div', 'class' => 'description'))
+					->addDecorator(
+						'Label', 
+						array()
+					)
+					->addDecorator(
+						array('opentag' => 'HtmlTag'), 
+						array(
+							'tag' => 'div',
+							'openOnly' => TRUE, 
+							'placement' => 'prepend',
+							'id'  => array('callback' => $getId)
+						)
+					)
+					->addDecorator(
+						array('close-tag' => 'HtmlTag'), 
+						array(
+							'tag' => 'div', 
+							'closeOnly' => TRUE, 
+							'placement' => 'append'
+						)
+					);
+		}
+		return $this;
+	}
+
+	/*
+	$getId = create_function('$decorator',
+                             'return $decorator->getElement()->getId()
+                                     . "-element";');
+    $this->addDecorator('ViewHelper')
+         ->addDecorator('Errors')
+         ->addDecorator('Description', array('tag' => 'p', 'class' => 'description'))
+         ->addDecorator('HtmlTag', array('tag' => 'dd',
+                                         'id'  => array('callback' => $getId)))
+         ->addDecorator('Label', array('tag' => 'dt'));
+	*/
 }

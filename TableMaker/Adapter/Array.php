@@ -90,4 +90,18 @@ class LBHToolkit_TableMaker_Adapter_Array extends LBHToolkit_TableMaker_Adapter_
 	{
 		return (++$this->_id);
 	}
+	
+	/**
+	 * Process the data based on the filters passed in the params.
+	 *
+	 * @param string $field 
+	 * @param string $type 
+	 * @param string $value 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function addFilter($query, $value)
+	{
+		
+	}
 }

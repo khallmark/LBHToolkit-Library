@@ -93,6 +93,11 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 	 */
 	public function render(&$data, LBHToolkit_TableMaker_Paging $pagingInfo)
 	{
+		if (!$this->show_pagination)
+		{
+			return;
+		}
+		
 		// Get the current page
 		$current_page = $this->page;
 		
@@ -188,7 +193,7 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 		
 		
 		// Put hte items in the list and return the html
-		return sprintf('<div class="pagination"><ul>%s</ul>%s</div>', $html, $result_string);
+		return sprintf('<tfoot><tr><td colspan="%s"><div class="pagination"><ul>%s</ul>%s</div></td></tr></tfoot>', $this->column_count, $html, $result_string);
 	}
 	
 	/**

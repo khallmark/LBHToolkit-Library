@@ -67,4 +67,15 @@ interface LBHToolkit_TableMaker_Adapter_Interface
 	 * @author Kevin Hallmark
 	 */
 	public function getPrimaryKey($row);
+	
+	/**
+	 * Process the data based on the filters passed in the params.
+	 *
+	 * @param string $field 
+	 * @param string $type 
+	 * @param string $value 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function addFilter($query, $value);
 }
