@@ -60,6 +60,20 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 				$this->addDecorator($name, $decorator);
 			}
 		}
+		
+		$this->_validate($params);
+	}
+	
+	/**
+	 * This function should validate in subclasses
+	 *
+	 * @param array $params 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	protected function _validate($params = array())
+	{
+		
 	}
 	
 	/**
