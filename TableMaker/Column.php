@@ -24,6 +24,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 {
 	protected $_decorators = array();
 	
+	protected $_tableMaker = NULL;
 	
 	public function setDefaultParams()
 	{
@@ -190,7 +191,8 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		$default_arguments = array(
 			'row' => $data, 
 			'row_value' => $html, 
-			'html' => &$html
+			'html' => &$html,
+			'tablemaker' => $this->getTableMaker()
 		);
 		
 		// Get the html attributes to add to this column
@@ -388,5 +390,15 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		}
 		
 		return $params;
+	}
+	
+	public function getTableMaker()
+	{
+		return $this->_tableMaker;
+	}
+	
+	public function setTableMaker(LBHToolkit_TableMaker $tableMaker)
+	{
+		$this->_tableMaker = $tableMaker;
 	}
 }

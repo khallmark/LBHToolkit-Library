@@ -38,6 +38,10 @@ abstract class LBHToolkit_TableMaker_Decorator_Abstract
 				{
 					$param = $replacements['row_value'];
 				}
+				else if ($param == '%%tablemaker%%')
+				{
+					$param = $replacements['tablemaker'];
+				}
 			}
 		}
 		
