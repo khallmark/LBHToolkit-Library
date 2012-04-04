@@ -31,7 +31,7 @@ class LBHToolkit_TableMaker_Decorator_Template extends LBHToolkit_TableMaker_Dec
 		
 		if (!$this->arguments)
 		{
-			$this->arguments = array('%%row%%');
+			$this->arguments = array('row' => '%%row%%', 'row_value' => '%%row_value%%');
 		}
 		
 		if (!is_array($this->arguments))
@@ -56,8 +56,10 @@ class LBHToolkit_TableMaker_Decorator_Template extends LBHToolkit_TableMaker_Dec
 		// If template variables were passed in
 		if ($this->arguments && is_array($this->arguments))
 		{
-			$template_params = $this->_parseParams(array_merge($this->arguments, $parameters), $parameters);
+			$template_params = $this->_parseParams($this->arguments, $parameters);
 		}
+		
+		$template_params['html'] = $output;
 		
 		$output = $this->view->partial($this->name, $template_params);
 		

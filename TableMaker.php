@@ -62,12 +62,15 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	public function direct($params)
 	{
 		$this->setDefaultParams();
+		
 		if ($params !== NULL)
 		{
 			$this->setParams($params);
 		}
 		
 		$this->validateParams($params);
+		
+		$this->init();
 		
 		$this->render_started = FALSE;
 		
@@ -127,6 +130,8 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			$column = new LBHToolkit_TableMaker_Column($column);
 			$column->view = $this->getActionController()->view;
 		}
+
+		$column->setTableMaker($this);
 		
 		$this->_columns[$column->column_id] = $column;
 		
@@ -415,7 +420,13 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	 */
 	public function __toString()
 	{
-		return $this->renderTable();
+		try {
+			return $this->renderTable();
+		} catch (Exception $e)
+		{
+			return $e->getMessage();
+		}
+		
 	}
 	
 	/**
