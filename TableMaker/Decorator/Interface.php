@@ -32,4 +32,26 @@ interface LBHToolkit_TableMaker_Decorator_Interface
 	 * @author Kevin Hallmark
 	 */
 	public function format($output, array $parameters = array());
+	
+	/**
+	 * This function is executed before a table renders a collection of rows. This
+	 * is not called by columns in any way.
+	 *
+	 * @param string $output 
+	 * @param array $parameters 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function preRender($output, array $parameters = array());
+	
+	/**
+	 * This function is executed after a table renders a collection of rows. This
+	 * is not called by columns in any way.
+	 *
+	 * @param string $output 
+	 * @param array $parameters 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function postRender($output, array $parameters = array());
 }

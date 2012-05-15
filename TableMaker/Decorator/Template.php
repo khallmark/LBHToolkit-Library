@@ -33,6 +33,10 @@ class LBHToolkit_TableMaker_Decorator_Template extends LBHToolkit_TableMaker_Dec
 		{
 			$this->arguments = array('row' => '%%row%%', 'row_value' => '%%row_value%%');
 		}
+		else
+		{
+			$this->arguments = array_merge(array('row' => '%%row%%', 'row_value' => '%%row_value%%'), $this->arguments);
+		}
 		
 		if (!is_array($this->arguments))
 		{

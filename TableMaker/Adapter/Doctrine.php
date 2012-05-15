@@ -23,6 +23,9 @@
 
 class LBHToolkit_TableMaker_Adapter_Doctrine extends LBHToolkit_TableMaker_Adapter_Abstract
 {
+	protected $_data = NULL;
+	
+	protected $_count = NULL;
 	/**
 	 * Set the default parameters for the Adapter
 	 *
@@ -32,6 +35,8 @@ class LBHToolkit_TableMaker_Adapter_Doctrine extends LBHToolkit_TableMaker_Adapt
 	public function setDefaultParams()
 	{
 		$this->primary_key = 'id';
+		
+		$this->hydration_mode = Doctrine::HYDRATE_RECORD;
 	}
 	
 	/**
@@ -74,17 +79,22 @@ class LBHToolkit_TableMaker_Adapter_Doctrine extends LBHToolkit_TableMaker_Adapt
 	 */
 	public function getData(LBHToolkit_TableMaker_Paging $pagingInfo)
 	{
-		$query = $this->query;
-		
-		// Add the order by clause
-		$query->orderBy($pagingInfo->sort . ' ' . $pagingInfo->order);
-		
-		// Set the limit and the offset
-		$query->offset($pagingInfo->count * ($pagingInfo->page - 1));
-		$query->limit($pagingInfo->count);
+		if (!$this->_data)
+		{
+			$query = $this->query;
 
-		// Return the query
-		return $query->execute();
+			// Add the order by clause
+			$query->orderBy($pagingInfo->sort . ' ' . $pagingInfo->order);
+
+			// Set the limit and the offset
+			$query->offset($pagingInfo->count * ($pagingInfo->page - 1));
+			$query->limit($pagingInfo->count);
+			
+			// Return the query
+			$this->_data = $query->execute(array(), $this->hydration_mode);
+		}
+		
+		return $this->_data;
 	}
 	
 	/**
@@ -95,14 +105,12 @@ class LBHToolkit_TableMaker_Adapter_Doctrine extends LBHToolkit_TableMaker_Adapt
 	 */
 	public function getTotalCount()
 	{
-		$query = clone $this->query;
-		return $query->count();
+		if (!$this->_count)
+		{
+			$this->_count = $this->query->count();
+		}
 		
-		$query->select($query->expr()->count('book'));
-		
-		$count = $query->getQuery()->getSingleScalarResult();
-		
-		return $count;
+		return $this->_count;
 	}
 	
 	/**

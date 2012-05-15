@@ -51,7 +51,7 @@ class LBHToolkit_TableMaker_Decorator_ViewHelper extends LBHToolkit_TableMaker_D
 		
 		$function = array($this->view, $view_helper);
 		
-		$options = $this->_parseParams($this->arguments, $parameters);
+		$options = $this->_parseParams($this->arguments, $parameters, TRUE);
 		
 		if (!is_callable($function))
 		{

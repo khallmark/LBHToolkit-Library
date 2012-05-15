@@ -24,27 +24,56 @@ abstract class LBHToolkit_TableMaker_Decorator_Abstract
 	extends LBHToolkit_Base 
 	implements LBHToolkit_TableMaker_Decorator_Interface
 {
-	protected function _parseParams($params, $replacements)
+	protected function _parseParams($params, $replacements, $replace = FALSE)
 	{
+		$new_params = array();
+		
 		if (count($params))
 		{
 			foreach ($params AS &$param)
 			{
 				if ($param == '%%row%%')
 				{
+					$new_params['row'] = $replacements['row'];
 					$param = $replacements['row'];
 				}
-				else if ($param == '%%row_value%%')
+				
+				if ($param == '%%row_value%%')
 				{
+					$new_params['row_value'] = $replacements['row_value'];
 					$param = $replacements['row_value'];
 				}
-				else if ($param == '%%tablemaker%%')
+				
+				if ($param == '%%tablemaker%%')
 				{
+					$new_params['tablemaker'] = $replacements['tablemaker'];
 					$param = $replacements['tablemaker'];
+				}
+				
+				if ($param == '%%html%%')
+				{
+					$new_params['html'] = $replacements['html'];
+					$param = $replacements['html'];
 				}
 			}
 		}
 		
-		return $params;
+		if ($replace)
+		{
+			return $params;
+		}
+		
+		return $new_params;
 	}
+	
+	public function preRender($output, array $parameters = array())
+	{
+		return $output;
+	}
+	
+	public function postRender($output, array $parameters = array())
+	{
+		return $output;
+	}
+	
 }

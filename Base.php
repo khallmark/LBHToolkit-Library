@@ -52,20 +52,8 @@ abstract class LBHToolkit_Base implements Serializable
 		{
 			$this->validateParams($params);
 		}
-		
-		$this->init();
 	}
-	
-	/**
-	 * Called at the end of the constructor to allow custom subclass behavior
-	 *
-	 * @return void
-	 * @author Kevin Hallmark
-	 */
-	public function init()
-	{
-		
-	}
+
 	
 	/**
 	 * Get a value from the params array

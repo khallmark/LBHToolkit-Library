@@ -141,8 +141,8 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 		// If we aren't on page 1, show a 'Prev' link
 		if($this->page > 1)
 		{
-			$html = $html . sprintf('<li><a href="%s">First</a></li>', $this->renderLink($this->sort, (1)));
-			$html = $html . sprintf('<li><a href="%s">Prev</a></li>', $this->renderLink($this->sort, ($this->page - 1)));
+			$html = $html . '<li><a href="' . $this->renderLink($this->sort, (1)) . '">First</a></li>';
+			$html = $html . '<li><a href="' . $this->renderLink($this->sort, ($this->page - 1)) . '">Prev</a></li>';
 		}
 		
 		// Generate the middle links for the paginator
@@ -152,21 +152,20 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 			if ($i == $this->page)
 			{
 				// If this is hte current page, don't show a link and add a class
-				$html = $html . sprintf('<li class="current">%s</li>', $i);
+				$html = $html . '<li class="current">' . $i . '</li>';
 			}
 			else
 			{
 				// If this is not the next page, show a link and don't add a class
-				$link = $this->renderLink($this->sort, $i);
-				$html = $html . sprintf('<li><a href="%s">%s</a></li>', $link, $i);
+				$html = $html . '<li><a href="' . $this->renderLink($this->sort, $i) . '">' . $i . '</a></li>';
 			}
 		}
 		
 		// If we aren't on the last page, show a 'Next' link
 		if ($this->page < $total_pages)
 		{
-			$html = $html . sprintf('<li><a href="%s">Next</a></li>', $this->renderLink($this->sort, ($this->page + 1)));
-			$html = $html . sprintf('<li><a href="%s">Last</a></li>', $this->renderLink($this->sort, ($total_pages)));
+			$html = $html . '<li><a href="' . $this->renderLink($this->sort, ($this->page + 1)) . '">Next</a></li>';
+			$html = $html . '<li><a href="' . $this->renderLink($this->sort, ($total_pages)) . '">Last</a></li>';
 		}
 		
 		$result_string = '';
@@ -193,7 +192,7 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 		
 		
 		// Put hte items in the list and return the html
-		return sprintf('<tfoot><tr><td colspan="%s"><div class="pagination"><ul>%s</ul>%s</div></td></tr></tfoot>', $this->column_count, $html, $result_string);
+		return '<tfoot><tr><td colspan="' . $this->column_count . '"><div class="pagination"><ul>' . $html . '</ul>' . $result_string . '</div></td></tr></tfoot>';
 	}
 	
 	/**
@@ -215,12 +214,12 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 		$link = $this->action;
 		
 		// Add the sort parameters to the link
-		$link = $link . "/sort/$sort/order/$order";
+		$link = $link . '/sort/' . $sort . '/order/' . $order;
 		
 		// For everything except page 1 (the default) show the page number
 		if ($page != 1)
 		{
-			$link = $link . "/page/$page";
+			$link = $link . '/page/' . $page;
 		}
 		
 		// Append the query
@@ -229,7 +228,7 @@ class LBHToolkit_TableMaker_Paging extends LBHToolkit_TableMaker_Abstract
 			$query = '?';
 			foreach($this->query AS $key => $value)
 			{
-				$query = $query . sprintf('%s=%s&', $key, $value);
+				$query = $query . $key . '=' . $value . '&';
 			}
 			$link = $link . $query;
 		}

@@ -21,14 +21,22 @@
  */
 
 class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
-{
-	protected $_decorators = array();
-	
+{	
 	protected $_tableMaker = NULL;
-	
+		
 	public function setDefaultParams()
 	{
 		$this->search_type = '=';
+		
+		$decorator = new LBHToolkit_TableMaker_Decorator_Tag_Table_Header();
+		
+		$this->addDecorator('th', $decorator, 'header');
+		
+		
+		$decorator = new LBHToolkit_TableMaker_Decorator_Tag_Table_Cell();
+		
+		$this->addDecorator('td', $decorator, 'body');
+		
 	}
 	
 	/**
@@ -53,12 +61,25 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 			$this->label = ucwords(str_replace('_', ' ', $this->column_id));
 		}
 		
-		// If decorators were passed, run them through the decorator function
-		if ($this->decorators)
+		// If decorators were passed, run them through the decorator add function
+		if ($decorators = $this->decorators)
 		{
-			foreach ($this->decorators AS $name => $decorator)
+			$decorators = array_reverse($decorators);
+			
+			foreach ($decorators AS $name => $decorator)
 			{
-				$this->addDecorator($name, $decorator);
+				$this->addDecorator($name, $decorator, 'body');
+			}
+		}
+		
+		// If header decorators were passed, run them through the decorator add function
+		if ($decorators = $this->header_decorators)
+		{
+			$decorators = array_reverse($decorators);
+			
+			foreach ($decorators AS $name => $decorator)
+			{
+				$this->addDecorator($name, $decorator, 'header');
 			}
 		}
 		
@@ -85,16 +106,11 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 	 * @return void
 	 * @author Kevin Hallmark
 	 */
-	public function addDecorator($alias, $decorator)
+	public function addDecorator($alias, $decorator, $type = self::DEFAULT_DECORATOR_TYPE)
 	{
-		if (is_object($decorator))
-		{
-			if (!($decorator instanceof LBHToolkit_TableMaker_Decorator_Interface))
-			{
-				throw new LBHToolkit_TableMaker_Exception("The object you added for $alias doesn't conform to the adapter interface.");
-			}
-		}
-		else
+		// This is here for backwards compatability, but the "array" method for 
+		// defining decorators is now deprecated. 
+		if (is_array($decorator))
 		{
 			if (!isset($decorator['type']))
 			{
@@ -125,9 +141,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 			$decorator = new $class_name($decorator);
 		}
 		
-		$decorator->identifier = $alias;
-		
-		$this->_decorators[$alias] = $decorator;
+		return parent::addDecorator($alias, $decorator, $type);
 	}
 	
 	/**
@@ -137,7 +151,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 	 * @return void
 	 * @author Kevin Hallmark
 	 */
-	public function renderHeader(&$data, LBHToolkit_TableMaker_Paging $pagingInfo)
+	public function renderHeader(&$data, LBHToolkit_TableMaker_Paging $pagingInfo, $arguments = array())
 	{
 		// Set the label
 		$label = $this->label;
@@ -148,22 +162,27 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 			$label = sprintf('<a href="%s">%s</a>', $pagingInfo->renderHeader($this->sort, $pagingInfo), $label);
 		}
 		
-		// Get the header attributes
-		$attribs = $this->getHeaderAttributes();
-		$attribs['id'] = $this->column_id;
-		
 		// Allow a custom function to process the header information
 		if($this->header_function && method_exists($data, $this->header_function))
 		{
 			$function = $this->header_function;
-			$data->$function($this, $attribs);
+			$label = $data->$function($label, $attribs);
 		}
 		
-		// Parse the attributes in to an HTML string
-		$attribs = $this->_parseAttribs($attribs);
-		
-		// Format it into a header
-		$header = sprintf('<th%s>%s</th>', $attribs, $label);
+		if (($decorator = $this->getDecorator('th', 'header'))  && !$this->header_attributes_set)
+		{
+			$this->header_attributes_set = TRUE;
+			
+			$attribs = $this->getHeaderAttributes();
+			$attribs['id'] = $this->column_id;
+			
+			foreach ($attribs AS $key => $value)
+			{
+				$decorator->addAttribute($key, $value);
+			}
+		}
+
+		$header = $this->_processDecorators($label, 'header', $arguments);
 		
 		// Return the HTML
 		return $header;
@@ -177,38 +196,31 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 	 * @return void
 	 * @author Kevin Hallmark
 	 */
-	public function render(&$data, LBHToolkit_TableMaker_Paging $pagingInfo)
+	public function render(&$data, LBHToolkit_TableMaker_Paging $pagingInfo, $arguments = array())
 	{
 		// Get the column id
 		$column = $this->column_id;
 		
-		$id = $this->_dataValue($data, $this->id);
-		
-		// Init html
-		$html = $this->_dataValue($data, $column, '');
-		
-		// Default arguments passed to function/view_helper/template
-		$default_arguments = array(
-			'row' => $data, 
-			'row_value' => $html, 
-			'html' => &$html,
-			'tablemaker' => $this->getTableMaker()
-		);
-		
 		// Get the html attributes to add to this column
-		$attribs = $this->getBodyAttributes();
-		$attribs['id'] = $this->column_id . '-' . $id;
-		
-		if (count($this->getDecorators()))
+		if (($decorator = $this->getDecorator('td', 'body')) && !$this->body_attributes_set)
 		{
-			foreach ($this->getDecorators() AS $decorator)
+			$this->body_attributes_set = TRUE;
+			
+			$attribs = $this->getBodyAttributes();
+			$attribs['id'] = $this->column_id . '-%%id%%';
+			
+			foreach ($attribs AS $key => $value)
 			{
-				$decorator->view = $this->view;
-				$html = $decorator->format($html, $default_arguments);
+				$decorator->addAttribute($key, $value);
 			}
 		}
+
+		// vd($arguments);
+		$html = $arguments['row_value'];
 		
-		$html = sprintf('<td%s>%s</td>', $this->_parseAttribs($attribs), $html);
+		$html = $this->_processDecorators($html, 'body', $arguments);
+		
+		//$html = '<td' . $this->_parseAttribs($attribs) . '>' . $html . '</td>';
 		
 		return $html;
 	}
@@ -331,16 +343,6 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		return $attribs;
 	}
 	
-	/**
-	 * Return the decorators on this column
-	 *
-	 * @return void
-	 * @author Kevin Hallmark
-	 */
-	public function getDecorators()
-	{
-		return $this->_decorators;
-	}
 	
 	/**
 	 * Parse Attribtues arrays into a string
@@ -357,7 +359,7 @@ class LBHToolkit_TableMaker_Column extends LBHToolkit_TableMaker_Abstract
 		{
 			foreach($attribs AS $key => $value)
 			{
-				$attrib_str = $attrib_str . sprintf(' %s="%s"', $key, $value);
+				$attrib_str = $attrib_str . ' ' . $key .'="' . $value . '"';
 			}
 		}
 		

@@ -32,28 +32,20 @@ class LBHToolkit_TableMaker_Decorator_Function extends LBHToolkit_TableMaker_Dec
 	 * @author Kevin Hallmark
 	 */
 	public function format($output, array $parameters = array())
-	{
+	{		
 		// Get the body function
 		$function = $this->name;
-		
-		// If it's an array...
-		if (is_array($function))
-		{
-			// Check to make sure one of our special keys isn't used
-			// in the callable array
-			$function = $this->_parseParams($function, $parameters);
-		}
-		
-		$options = array($parameters);
-		if (isset($this->arguments))
+		// vd($parameters);
+	//	$options = array($parameters);
+		if ($this->arguments)
 		{
 			// Use them
 			$options = $this->_parseParams($this->arguments, $parameters);
 		}
-		
+		// vdd($options);
 		if (!is_callable($function))
 		{
-			$message = sprintf('The body function on %s could not be called.', $column);
+			$message = sprintf('The closure function could not be called.');
 			throw new LBHToolkit_TableMaker_Exception($message);
 		}
 		

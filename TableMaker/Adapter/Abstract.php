@@ -92,8 +92,6 @@ abstract class LBHToolkit_TableMaker_Adapter_Abstract implements Serializable, L
 	}
 	
 	
-	
-	
 	/**
 	 * Get the parameters in mass
 	 *
