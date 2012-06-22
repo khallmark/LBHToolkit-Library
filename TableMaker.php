@@ -38,16 +38,38 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	const PAGE_SIZE_MAX = 100;
 	
 	/**
-	 * The headers for the table
+	 * Added to make changing the default decorator type easier
+	 */
+	const DEFAULT_DECORATOR_TYPE = 'body';
+	
+	/**
+	 * The columns for the table
 	 * 
 	 * @var array
 	 */
 	protected $_columns;
 	
-	
+	/**
+	 * The adapter used to load the data
+	 *
+	 * @var LBHToolkit_TableMaker_Adapter_Interface
+	 */
 	protected $_adapter = NULL;
 	
-	
+	/**
+	 * The types of decorators supported by this object
+	 * 
+	 * output: decorator for the whole table body
+	 * header: decorator for the header row
+	 * body:   decorator for the body rows
+	 *
+	 * @var string
+	 */
+	protected $_decorator_types = array('output', 'header', 'body');
+
+
+	protected $_decorators = array();
+
 	protected $_template_vars = array();
 	
 	protected $_searchable_fields = array();
@@ -68,13 +90,39 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			$this->setParams($params);
 		}
 		
+		$this->init();
+		
 		$this->validateParams($params);
 		
-		$this->init();
+		$this->initData();
 		
 		$this->render_started = FALSE;
 		
 		return $this;
+	}
+	
+	
+	/**
+	 * Called at the end of the constructor to allow custom subclass behavior
+	 *
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function init()
+	{
+		
+	}
+	
+	
+	/**
+	 * Called at the end of the constructor to allow custom subclass behavior
+	 *
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function initData()
+	{
+		
 	}
 	
 	/**
@@ -100,6 +148,65 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			$this->count = LBHToolkit_TableMaker::PAGE_SIZE;
 		}
 		
+		if ($this->pre_load)
+		{
+			if (!is_callable($this->pre_load))
+			{
+				throw new LBHToolkit_TableMaker_Exception("pre_load is not callable");
+			}
+		}
+		
+		if ($this->post_load)
+		{
+			if (!is_callable($this->post_load))
+			{
+				throw new LBHToolkit_TableMaker_Exception("post_load is not callable");
+			}
+		}
+
+		
+		// If header decorators were passed, run them through the decorator add function
+		if ($decorators = $this->output_decorators)
+		{
+			$decorators = array_reverse($decorators);
+			
+			foreach ($decorators AS $name => $decorator)
+			{
+				$this->addDecorator($name, $decorator, 'output');
+			}
+		}
+		
+		// If header decorators were passed, run them through the decorator add function
+		if ($decorators = $this->header_decorators)
+		{
+			$decorators = array_reverse($decorators);
+			
+			foreach ($decorators AS $name => $decorator)
+			{
+				$this->addDecorator($name, $decorator, 'header');
+			}
+		}
+				
+		// If decorators were passed, run them through the decorator add function
+		if ($decorators = $this->body_decorators)
+		{
+			$decorators = array_reverse($decorators);
+			
+			foreach ($decorators AS $name => $decorator)
+			{
+				$this->addDecorator($name, $decorator, 'body');
+			}
+		}
+
+		// Add the class, this is a deprecated setup option
+		if ($this->class)
+		{
+			if ($decorator = $this->getDecorator('table', 'output'))
+			{
+				$decorator->addAttribute('class', $this->class);
+			}
+		}
+		
 	}
 	
 	public function setDefaultParams()
@@ -109,6 +216,64 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		
 		$this->show_header = TRUE;
 		$this->show_pagination = TRUE;
+		
+		$decorators = array(
+			'output' => array(
+				'div' => new LBHToolkit_TableMaker_Decorator_Tag(
+					array(
+						'tag' => 'div',
+						'attributes' => array(
+							'class' => 'tablemaker'
+						)
+					)
+				),
+				'table' => new LBHToolkit_TableMaker_Decorator_Tag_Table(
+					array(
+						'attributes' => array(
+							'id' => '%%table_name%%'
+						)
+					)
+				)
+			),
+			'header' => array(
+				'thead' => new LBHToolkit_TableMaker_Decorator_Tag_Table_Head(
+					array(
+						'attributes' => array(
+							'id' => '%%table_name%%-thead'
+						)
+					)
+				),
+				'tr' => new LBHToolkit_TableMaker_Decorator_Tag_Table_Row(
+					array(
+						'attributes' => array(
+							'id' => '%%table_name%%-header'
+						)
+					)
+				),
+			),
+			'body' => array(
+				'tbody' => new LBHToolkit_TableMaker_Decorator_Tag_Table_Body(
+					array(
+						'attributes' => array(
+							'id' => '%%table_name%%-tbody'
+						)
+					)
+				),
+				'tr' => new LBHToolkit_TableMaker_Decorator_Tag_Table_Row(
+					array(
+						'attributes' => array(
+							'id' => '%%table_name%%-row-%%id%%',
+						)
+					)
+				),
+			)
+		);
+		
+		foreach ($decorators AS $type => $type_decorators)
+		{
+			$this->addDecorators($type_decorators, $type);
+		}
+
 	}
 	
 	/**
@@ -237,7 +402,11 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		
 		$total_count = $this->getAdapter()->getTotalCount();//$this->total_count;
 		
+		$this->_preLoad($this, $pagingInfo);
+		
 		$data = $this->getAdapter()->getData($pagingInfo);
+		
+		$this->_postLoad($this, $pagingInfo, $data);
 		
 		if (count($data) == 0 || $total_count == 0)
 		{
@@ -249,16 +418,45 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		
 		$pagingInfo->show_pagination = $this->show_pagination;
 		
-		$html = sprintf(
-			'<div class="tablemaker"><table id="%s" class="%s">%s%s%s</table></div>', 
-			$this->table_name,
-			$this->class, 
-			$this->renderHeader($data, $pagingInfo), 
-			$this->render($data, $pagingInfo), 
-			$pagingInfo->render($data, $pagingInfo)
+		// $html = sprintf(
+		// 	'<div class="tablemaker"><table id="%s" class="%s">%s%s%s</table></div>', 
+		// 	$this->table_name,
+		// 	$this->class, 
+		// 	$this->renderHeader($data, $pagingInfo), 
+		// 	$this->render($data, $pagingInfo), 
+		// 	$pagingInfo->render($data, $pagingInfo)
+		// );
+		
+		$html = $this->renderHeader($data, $pagingInfo) . $this->render($data, $pagingInfo) . $pagingInfo->render($data, $pagingInfo);
+		
+		$html = $this->_processDecorators(
+			$html, 
+			'output', 
+			array(
+				'tablemaker' => $this
+			)
 		);
 		
+		
 		return $html;
+	}
+	
+	protected function _preLoad($tablemaker, $pagingInfo)
+	{
+		if ($this->pre_load)
+		{
+			$pre_load = $this->pre_load;
+			$pre_load($tablemaker, $pagingInfo);
+		}
+	}
+	
+	protected function _postLoad($tablemaker, $pagingInfo, &$data)
+	{
+		if ($this->post_load)
+		{
+			$post_load = $this->post_load;
+			$post_load($tablemaker, $pagingInfo, $data);
+		}
 	}
 	
 	public function renderForm()
@@ -327,7 +525,9 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			$html = $html . $column->renderHeader($data, $pagingInfo);
 		}
 		
-		$html = sprintf('<thead id="%s-thead"><tr id="%s-header">%s</tr></thead>', $this->table_name, $this->table_name, $html);
+		$html = $this->_processDecorators($html, 'header', array('tablemaker' => $this));
+		
+		//$html = sprintf('<thead id="%s-thead"><tr id="%s-header">%s</tr></thead>', $this->table_name, $this->table_name, $html);
 		
 		return $html;
 	}
@@ -346,29 +546,274 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		}
 		
 		$columns = $this->_columns;
+		
+		$html = $this->_preRenderDecorators('', array('tablemaker' => $this, 'html' => ''));
+		
 		foreach ($data AS $row)
 		{
 			if (is_array($row))
 			{
-				$row = (object)$row;
+				//$row = (object)$row;
 			}
+			
+			$id = $this->_dataValue($row, $this->id);
+			
+			// Default arguments passed to function/view_helper/template
+			$arguments = array(
+				'row' => $row, 
+				'id' => $id, 
+				'tablemaker' => $this,
+			);
 			
 			$row_html = '';
 			foreach ($columns AS $column)
 			{
-				$column->id = $this->id;
-				$column->template_vars = $this->_template_vars;
-				$column_id = $column->column_id;
+				$arguments['row_value'] = $arguments['html'] = $this->_dataValue($row, $column->column_id, '');
 				
-				$row_html = $row_html . $column->render($row, $pagingInfo);
+				$row_html = $row_html . $column->render($row, $pagingInfo, $arguments);
+				
+				$arguments['html'] = $row_html;
 			}
-			$id = $this->_dataValue($row, $this->id);
 			
-			$html = $html . sprintf('<tbody id="%s-tbody"><tr id="%s-row-%s">%s</tr></tbody>', $this->table_name,$this->table_name, $id, $row_html);
+			$html .= $this->_processDecorators($row_html, 'body', $arguments);
+			
+			//$html = $html . '<tr id="' . $this->table_name . '-row-' . $id . '">' . $row_html . '</tr>';
+		}
+		
+		$html = $this->_postRenderDecorators($html, array('tablemaker' => $this, 'html' => $html));
+		
+		//$html = sprintf('<tbody id="%s-tbody">%s</tbody>', $this->table_name, $html);
+		
+		return $html;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/**
+	 * Adds a decorator to the LBHToolkit_TableMaker_Abstract object
+	 * 
+	 * This is used in a TableMaker itself for rows
+	 * This is used in a Column for rendering the column
+	 * This is used in Paging for rendering the paging info at the bottom
+	 *
+	 * @param string $alias 
+	 * @param LBHToolkit_TableMaker_Decorator_Interface $decorator 
+	 * @param string $type
+	 * @return LBHToolkit_TableMaker_Decorator_Interface
+	 * @author Kevin Hallmark
+	 */
+	public function addDecorator($alias, LBHToolkit_TableMaker_Decorator_Interface $decorator, $type = self::DEFAULT_DECORATOR_TYPE)
+	{
+		$decorator->identifier = $alias;
+		
+		$decorators = $this->_getDecoratorReference($type);
+		
+		$decorators[$alias] = $decorator;
+		
+		$this->_decorators[$type] = $decorators;
+		
+		return $decorator;
+	}
+	
+	/**
+	 * Add an array of decorators to the object of type $type. Defaults to body
+	 *
+	 * @param string $decorators 
+	 * @param string $type 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function addDecorators($decorators, $type = self::DEFAULT_DECORATOR_TYPE)
+	{
+		foreach ($decorators AS $alias => $decorator)
+		{
+			$this->addDecorator($alias, $decorator, $type);
+		}
+		
+		return $decorators;
+	}
+	
+	public function removeDecorator($alias, $type = self::DEFAULT_DECORATOR_TYPE)
+	{
+		$decorators = $this->_getDecoratorReference($type);
+		
+		if (isset($decorators[$alias]))
+		{
+			unset($decorators[$alias]);
+			
+			return TRUE;
+		}
+		
+		return FALSE;
+	}
+	
+	public function getDecorator($alias, $type = self::DEFAULT_DECORATOR_TYPE)
+	{
+		$decorators = $this->_getDecoratorReference($type);
+		
+		if (isset($decorators[$alias]))
+		{
+			return $decorators[$alias];
+		}
+		
+		return NULL;
+	}
+	
+	/**
+	 * Returns the decorators of $type
+	 *
+	 * @param string $type 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function getDecorators($type = self::DEFAULT_DECORATOR_TYPE)
+	{
+		$this->_checkType($type);
+		
+		return $this->_decorators[$type];
+	}
+	
+	public function setDecorators($decorators, $type = self::DEFAULT_DECORATOR_TYPE)
+	{
+		$this->_checkType($type);
+		
+		unset($this->_decorators[$type]);
+		
+		$this->addDecorators($decorators, $type);
+	}
+
+	protected function _preRenderDecorators($html, $arguments = array())
+	{
+		$decorators = $this->getDecorators('body');
+		
+		if (count($decorators))
+		{
+			$decorators = array_reverse($decorators);
+			foreach ($decorators AS $decorator)
+			{
+				if ($view = $this->view)
+				{
+					$decorator->view = $view;
+				}
+
+				$html = $decorator->preRender($html, $arguments);
+				
+				$arguments['html'] = $html;
+			}
 		}
 		
 		return $html;
 	}
+	
+	protected function _postRenderDecorators($html, $arguments = array())
+	{
+		$decorators = $this->getDecorators('body');
+		
+		if (count($decorators))
+		{
+			$decorators = array_reverse($decorators);
+			foreach ($decorators AS $decorator)
+			{
+				if ($view = $this->view)
+				{
+					$decorator->view = $view;
+				}
+				
+				$html = $decorator->postRender($html, $arguments);
+			}
+		}
+		
+		return $html;
+	}
+		
+	protected function _processDecorators($html, $type = self::DEFAULT_DECORATOR_TYPE, $arguments = array())
+	{
+		$decorators = $this->getDecorators($type);
+		
+		if (count($decorators))
+		{
+			$decorators = array_reverse($decorators);
+			foreach ($decorators AS $decorator)
+			{
+				if ($view = $this->view)
+				{
+					$decorator->view = $view;
+				}
+				$html = $decorator->format($html, $arguments);
+				
+				$arguments['html'] = $html;
+			}
+		}
+		
+		return $html;
+	}
+	
+	
+	
+	/**
+	 * Checks the type and returns a reference to the decorator array
+	 *
+	 * @param string $type 
+	 * @return array
+	 * @author Kevin Hallmark
+	 */
+	protected function &_getDecoratorReference($type)
+	{
+		$this->_checkType($type);
+		
+		if (!isset($this->_decorators[$type]))
+		{
+			$this->_decorators[$type] = array();
+		}
+		
+		return $this->_decorators[$type];
+	}
+	
+	protected function _checkType($type)
+	{
+		if (!in_array($type, $this->_decorator_types))
+		{
+			$message = sprintf(
+				'Decorator type %s not supported. Valid values: %s',
+				$type,
+				implode(', ', $this->_decorator_types)
+			);
+			
+			throw new LBHToolkit_TableMaker_Exception($message);
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	/**
 	 * Get from the params array. Used for serialization
@@ -420,11 +865,24 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	 */
 	public function __toString()
 	{
+		if ($this->render_started)
+		{
+			return '';
+		}
+		
 		try {
-			return $this->renderTable();
+			$start = microtime(TRUE);
+			
+			$return = $this->renderTable();
+			
+			$end = microtime(TRUE);
+			
+			$total_time = ($end-$start) . 's';
+			
+			return $return;
 		} catch (Exception $e)
 		{
-			return $e->getMessage();
+			return "<pre>" . $e->getMessage() . "<br />" . $e->getTraceAsString() . "</pre>";
 		}
 		
 	}
