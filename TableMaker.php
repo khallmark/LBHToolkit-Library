@@ -217,6 +217,8 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		$this->show_header = TRUE;
 		$this->show_pagination = TRUE;
 		
+		$this->use_modules = TRUE;
+
 		$decorators = array(
 			'output' => array(
 				'div' => new LBHToolkit_TableMaker_Decorator_Tag(
@@ -384,12 +386,17 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	
 	public function getActionName()
 	{
-		$moduleName = $this->getRequest()->getModuleName();
-		$controllerName = $this->getRequest()->getControllerName();
-		$actionName = $this->getRequest()->getActionName();
+		$moduleName = '';
+		if ($this->use_modules)
+		{
+			$moduleName = '/' . $this->getRequest()->getModuleName();
+			
+		}
+		$controllerName = '/' . $this->getRequest()->getControllerName();
+		$actionName = '/' . $this->getRequest()->getActionName();
 		
 		
-		return '/' . $moduleName . '/' . $controllerName . '/' .$actionName;
+		return $this->getRequest()->getBaseUrl() . $moduleName . $controllerName . $actionName;
 	}
 
 	public function setData($data)

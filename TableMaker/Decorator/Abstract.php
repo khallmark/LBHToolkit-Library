@@ -38,6 +38,12 @@ abstract class LBHToolkit_TableMaker_Decorator_Abstract
 					$param = $replacements['row'];
 				}
 				
+				if ($param == '%%id%%')
+				{
+					$new_params['id'] = $replacements['id'];
+					$param = $replacements['id'];
+				}
+				
 				if ($param == '%%row_value%%')
 				{
 					$new_params['row_value'] = $replacements['row_value'];
