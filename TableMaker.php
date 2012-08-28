@@ -309,6 +309,23 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	}
 	
 	/**
+	 * Returns the column named $alias
+	 *
+	 * @param string $alias 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function getColumn($alias)
+	{
+		if (isset($this->_columns[$alias]))
+		{
+			return $this->_columns[$alias];
+		}
+		
+		return NULL;
+	}
+	
+	/**
 	 * The Template Variables are passed on rendering to an partials rendered by
 	 * the TableMaker.
 	 *

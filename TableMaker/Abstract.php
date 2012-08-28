@@ -143,7 +143,13 @@ abstract class LBHToolkit_TableMaker_Abstract extends LBHToolkit_Base implements
 				{
 					$decorator->view = $view;
 				}
+				
 				$html = $decorator->format($html, $arguments);
+				
+				if (isset($arguments['html']))
+				{
+					$arguments['html'] = $html;
+				}
 			}
 		}
 		
