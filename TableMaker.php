@@ -395,8 +395,22 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		$controllerName = '/' . $this->getRequest()->getControllerName();
 		$actionName = '/' . $this->getRequest()->getActionName();
 		
+		$params = $this->getRequest()->getParams();
 		
-		return $this->getRequest()->getBaseUrl() . $moduleName . $controllerName . $actionName;
+		$paramString = '';
+		
+		$ignored_params = array('module', 'controller', 'action', 'sort', 'order', 'page');
+		foreach ($params AS $key => $value)
+		{
+			if (!in_array($key, $ignored_params))
+			{
+				$paramString .= '/' . $key . '/' . $value;
+			}
+		}
+		
+		$path = $this->getRequest()->getBaseUrl() . $moduleName . $controllerName . $actionName . $paramString;
+		
+		return $path;
 	}
 
 	public function setData($data)
