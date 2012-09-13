@@ -83,23 +83,27 @@ class LBHToolkit_TableMaker_Adapter_Doctrine extends LBHToolkit_TableMaker_Adapt
 		{
 			$query = $this->query;
 			
-			$sort = $pagingInfo->sort;
-			
-			if (FALSE !== strpos($pagingInfo->sort, ','))
+			if ($pagingInfo->sort)
 			{
-				$sort_explode = explode(',', $sort);
-				
-				$main_sort = array_shift($sort_explode);
-				
-				$sort = $main_sort . ' ' . $pagingInfo->order . ',' . implode(',', $sort_explode);
+				$sort = $pagingInfo->sort;
+
+				if (FALSE !== strpos($pagingInfo->sort, ','))
+				{
+					$sort_explode = explode(',', $sort);
+
+					$main_sort = array_shift($sort_explode);
+
+					$sort = $main_sort . ' ' . $pagingInfo->order . ',' . implode(',', $sort_explode);
+				}
+				else
+				{
+					$sort = $sort . ' ' . $pagingInfo->order;
+				}
+
+				// Add the order by clause
+				$query->orderBy($sort);
 			}
-			else
-			{
-				$sort = $sort . ' ' . $pagingInfo->order;
-			}
-			
-			// Add the order by clause
-			$query->orderBy($sort);
+
 
 			// Set the limit and the offset
 			$query->offset($pagingInfo->count * ($pagingInfo->page - 1));

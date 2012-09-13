@@ -327,6 +327,11 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		return NULL;
 	}
 	
+	public function getColumns()
+	{
+		return $this->_columns;
+	}
+	
 	/**
 	 * The Template Variables are passed on rendering to an partials rendered by
 	 * the TableMaker.
@@ -351,13 +356,13 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	{
 		$paging = array();
 		
-		$default_sort = 'id';
+		$default_sort = NULL;
 		if($this->default_sort)
 		{
 			$default_sort = $this->default_sort;
 		}
 		
-		$default_order = 'asc';
+		$default_order = NULL;
 		if ($this->default_order)
 		{
 			$default_order = $this->default_order;
@@ -557,6 +562,7 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			throw new LBHToolkit_TableMaker_Exception("No columns provided for the table.");
 		}
 		
+		$html = '';
 		foreach ($columns AS $column)
 		{
 			$column->id = $this->id;
@@ -564,8 +570,6 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		}
 		
 		$html = $this->_processDecorators($html, 'header', array('tablemaker' => $this));
-		
-		//$html = sprintf('<thead id="%s-thead"><tr id="%s-header">%s</tr></thead>', $this->table_name, $this->table_name, $html);
 		
 		return $html;
 	}
@@ -583,48 +587,67 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			throw new LBHToolkit_TableMaker_Exception("I'm sorry Dave, I'm afraid I can't do that. Please call renderTable().");
 		}
 		
-		$columns = $this->_columns;
+		$columns = $this->getColumns();
 		
 		$html = $this->_preRenderDecorators('', array('tablemaker' => $this, 'html' => ''));
 		
 		foreach ($data AS $row)
 		{
-			if (is_array($row))
-			{
-				//$row = (object)$row;
-			}
-			
-			$id = $this->_dataValue($row, $this->id);
-			
-			// Default arguments passed to function/view_helper/template
-			$arguments = array(
-				'row' => $row, 
-				'id' => $id, 
-				'tablemaker' => $this,
-			);
-			
-			$row_html = '';
-			foreach ($columns AS $column)
-			{
-				$arguments['row_value'] = $arguments['html'] = $this->_dataValue($row, $column->column_id, '');
-				
-				$row_html = $row_html . $column->render($row, $pagingInfo, $arguments);
-				
-				$arguments['html'] = $row_html;
-			}
-			
-			$html .= $this->_processDecorators($row_html, 'body', $arguments);
-			
-			//$html = $html . '<tr id="' . $this->table_name . '-row-' . $id . '">' . $row_html . '</tr>';
+			$html .= $this->renderRow($row, $pagingInfo, $columns);
 		}
 		
 		$html = $this->_postRenderDecorators($html, array('tablemaker' => $this, 'html' => $html));
 		
-		//$html = sprintf('<tbody id="%s-tbody">%s</tbody>', $this->table_name, $html);
-		
 		return $html;
 	}
 	
+	/**
+	 * Renders a SINGLE row. $pagingInfo and $columns should NOT be passed if you're 
+	 * calling this function directly. Those values are ONLY passed by render()
+	 *
+	 * @param string $row 
+	 * @param LBHToolkit_TableMaker_Paging $pagingInfo 
+	 * @param string $columns 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function renderRow($row, LBHToolkit_TableMaker_Paging $pagingInfo = NULL, &$columns = NULL)
+	{
+		if (is_null($pagingInfo))
+		{
+			$pagingInfo = $this->getPagingInfo();
+		}
+		
+		if (is_null($columns))
+		{
+			$columns = $this->getColumns();
+		}
+		
+		$id = $this->_dataValue($row, $this->id);
+		
+		$html = '';
+		
+		// Default arguments passed to function/view_helper/template
+		$arguments = array(
+			'row' => $row, 
+			'id' => $id, 
+			'tablemaker' => $this,
+		);
+		
+		$row_html = '';
+		foreach ($columns AS $column)
+		{
+			$arguments['row_value'] = $arguments['html'] = $this->_dataValue($row, $column->column_id, '');
+			
+			$row_html = $row_html . $column->render($row, $pagingInfo, $arguments);
+			
+			$arguments['html'] = $row_html;
+		}
+		
+		$html .= $this->_processDecorators($row_html, 'body', $arguments);
+		
+		return $html;
+	}
 	
 	
 	
