@@ -31,11 +31,11 @@ class LBHToolkit_TableMaker_Decorator_Template extends LBHToolkit_TableMaker_Dec
 		
 		if (!$this->arguments)
 		{
-			$this->arguments = array('row' => '%%row%%', 'row_value' => '%%row_value%%');
+			$this->arguments = array('row' => 'row', 'row_value' => 'row_value');
 		}
 		else
 		{
-			$this->arguments = array_merge(array('row' => '%%row%%', 'row_value' => '%%row_value%%'), $this->arguments);
+			$this->arguments = array_merge(array('row' => 'row', 'row_value' => 'row_value'), $this->arguments);
 		}
 		
 		if (!is_array($this->arguments))
@@ -60,7 +60,9 @@ class LBHToolkit_TableMaker_Decorator_Template extends LBHToolkit_TableMaker_Dec
 		// If template variables were passed in
 		if ($this->arguments && is_array($this->arguments))
 		{
+			// vd($this->arguments);
 			$template_params = $this->_parseParams($this->arguments, $parameters);
+			// vdd($template_params);
 		}
 		
 		$template_params['html'] = $output;
@@ -68,5 +70,53 @@ class LBHToolkit_TableMaker_Decorator_Template extends LBHToolkit_TableMaker_Dec
 		$output = $this->view->partial($this->name, $template_params);
 		
 		return $output;
+	}
+	
+	protected function _parseParams($params, $replacements, $replace = FALSE)
+	{
+		$new_params = array();
+		
+		if (count($params))
+		{
+			foreach ($params AS $param_name => &$param)
+			{
+				if ($param_name == 'row')
+				{
+					$new_params['row'] = $replacements['row'];
+					$param = $replacements['row'];
+				}
+				else if ($param_name == 'id')
+				{
+					$new_params['id'] = $replacements['id'];
+					$param = $replacements['id'];
+				}
+				else if ($param_name == 'row_value')
+				{
+					$new_params['row_value'] = $replacements['row_value'];
+					$param = $replacements['row_value'];
+				}
+				else if ($param_name == 'tablemaker')
+				{
+					$new_params['tablemaker'] = $replacements['tablemaker'];
+					$param = $replacements['tablemaker'];
+				}
+				else if ($param_name == 'html')
+				{
+					$new_params['html'] = $replacements['html'];
+					$param = $replacements['html'];
+				}
+				else if (isset($params[$param_name]))
+				{
+					$new_params[$param_name] = $params[$param_name];
+				}
+			}
+		}
+		
+		if ($replace)
+		{
+			return $params;
+		}
+		
+		return $new_params;
 	}
 }

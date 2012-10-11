@@ -75,6 +75,13 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	protected $_searchable_fields = array();
 	
 	/**
+	 * Temporarily stores the paging information
+	 *
+	 * @var string
+	 */
+	protected $_paging_info = NULL;
+	
+	/**
 	 * Allows this plugin to be instantiated more easily from the HelperBroker
 	 *
 	 * @param string $params 
@@ -99,6 +106,27 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		$this->render_started = FALSE;
 		
 		return $this;
+	}
+	
+	public function __construct($params = NULL)
+	{
+		if ($params !== NULL)
+		{
+			$this->setDefaultParams();
+			
+			if ($params !== NULL)
+			{
+				$this->setParams($params);
+			}
+			
+			$this->init();
+			
+			$this->validateParams($params);
+			
+			$this->initData();
+			
+			$this->render_started = FALSE;
+		}
 	}
 	
 	
@@ -141,7 +169,17 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			throw new LBHToolkit_TableMaker_Exception("No Adapter Specified");
 		}
 		
-		$this->_adapter = new $this->adapter;
+		if (!is_object($this->_adapter))
+		{
+			$this->_adapter = new $this->adapter;
+		}
+		else
+		{
+			$this->_adapter = $this->adapter;
+			$this->adapter = NULL;
+		}
+		
+		$this->getAdapter()->primary_key = $this->id;
 		
 		if (!$this->count)
 		{
@@ -295,7 +333,11 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		else
 		{
 			$column = new LBHToolkit_TableMaker_Column($column);
-			$column->view = $this->getActionController()->view;
+			
+			if ($this->getActionController())
+			{
+				$column->view = $this->getActionController()->view;
+			}
 		}
 
 		$column->setTableMaker($this);
@@ -354,41 +396,57 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	 */
 	public function getPagingInfo()
 	{
-		$paging = array();
-		
-		$default_sort = NULL;
-		if($this->default_sort)
+		if (!$this->_paging_info)
 		{
-			$default_sort = $this->default_sort;
+			$paging = array();
+			
+			$default_sort = NULL;
+			if($this->default_sort)
+			{
+				$default_sort = $this->default_sort;
+			}
+			
+			$default_order = NULL;
+			if ($this->default_order)
+			{
+				$default_order = $this->default_order;
+			}
+			
+			$paging['default_sort'] = $default_sort;
+			$paging['default_order'] = $default_order;
+			
+			$paging['page'] = $this->getRequest()->getParam('page', 1);
+			$paging['count'] = $this->getRequest()->getParam('count', $this->count);
+			
+			$paging['sort'] = $this->getRequest()->getParam('sort', $default_sort);
+			$paging['order'] = $this->getRequest()->getParam('order', $default_order);
+			
+			$paging['sort_order'] = sprintf('%s.%s', $paging['sort'], $paging['order']);
+			
+			$paging['action'] = $this->getActionName();
+			
+			$paging['query'] = $this->getRequest()->getQuery();
+			
+			$pagingInfo = new LBHToolkit_TableMaker_Paging($paging);
+			
+			$this->setPagingInfo($pagingInfo);
 		}
 		
-		$default_order = NULL;
-		if ($this->default_order)
-		{
-			$default_order = $this->default_order;
-		}
 		
-		$paging['default_sort'] = $default_sort;
-		$paging['default_order'] = $default_order;
-		
-		$paging['page'] = $this->getRequest()->getParam('page', 1);
-		$paging['count'] = $this->getRequest()->getParam('count', $this->count);
-		
-		
-		$paging['sort'] = $this->getRequest()->getParam('sort', $default_sort);
-		$paging['order'] = $this->getRequest()->getParam('order', $default_order);
-		
-		$paging['sort_order'] = sprintf('%s.%s', $paging['sort'], $paging['order']);
-		
-		$paging['action'] = $this->getActionName();
-		
-		$paging['query'] = $this->getRequest()->getQuery();
-		
-		$pagingInfo = new LBHToolkit_TableMaker_Paging($paging);
-		
-		return $pagingInfo;
+		return $this->_paging_info;
 	}
 	
+	public function setPagingInfo(LBHToolkit_TableMaker_Paging $pagingInfo)
+	{
+		$this->_paging_info = $pagingInfo;
+	}
+	
+	/**
+	 * Get's the full action path including module/controller/action
+	 *
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
 	public function getActionName()
 	{
 		$moduleName = '';
@@ -418,16 +476,61 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		return $path;
 	}
 
+	/**
+	 * Sets the raw data to the adapter. This would be a query in a DB based
+	 * adapter or the entire array of data in an array preparation.
+	 *
+	 * @param string $data 
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
 	public function setData($data)
 	{
 		$this->getAdapter()->setData($data);
 	}
 	
+	/**
+	 * Returns the data from the adapter including pre- and post- load hooks.
+	 *
+	 * @return void
+	 * @author Kevin Hallmark
+	 */
+	public function getData()
+	{
+		// Get the paging info, needed for hook calls
+		$pagingInfo = $this->getPagingInfo();
+		
+		// We need to get the total count before we attempt to load data
+		$total_count = $this->getAdapter()->getTotalCount();
+		
+		// Run the preload hook
+		$this->_preLoad($this, $pagingInfo);
+		
+		// Actually get the data from the tablemaker.
+		$data = $this->getAdapter()->getData($pagingInfo);
+		
+		// Run the postload hook
+		$this->_postLoad($this, $pagingInfo, $data);
+		
+		// Set the total count to the tablemaker
+		$pagingInfo->setTotalCount($total_count);
+		$pagingInfo->column_count = count($this->_columns);
+		
+		// Save the pagingInfo to the 
+		$this->setPagingInfo($pagingInfo);
+		
+		return $data;
+	}
+	
 	public function renderTable()
 	{
+		// This keeps you from calling functions out-of-turn
 		$this->render_started = TRUE;
 		
+		// Get the query string
 		$query = $this->getRequest()->getQuery();
+		
+		// Process the search form if it exists
 		if (count($this->_searchable_fields))
 		{
 			foreach ($this->_searchable_fields AS $column)
@@ -441,37 +544,18 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			}
 		}
 
+		// Get the data, updated pagingInfo and count
+		$data = $this->getData();
 		$pagingInfo = $this->getPagingInfo();
+		$total_count = $this->getAdapter()->getTotalCount();
 		
-		$total_count = $this->getAdapter()->getTotalCount();//$this->total_count;
-		
-		$this->_preLoad($this, $pagingInfo);
-		
-		$data = $this->getAdapter()->getData($pagingInfo);
-		
-		$this->_postLoad($this, $pagingInfo, $data);
-		
-		if (count($data) == 0 || $total_count == 0)
-		{
-			return $this->renderEmpty();
-		}
-		
-		$pagingInfo->setTotalCount($total_count);
-		$pagingInfo->column_count = count($this->_columns);
-		
+		// Mark the pagingation to show/hide
 		$pagingInfo->show_pagination = $this->show_pagination;
 		
-		// $html = sprintf(
-		// 	'<div class="tablemaker"><table id="%s" class="%s">%s%s%s</table></div>', 
-		// 	$this->table_name,
-		// 	$this->class, 
-		// 	$this->renderHeader($data, $pagingInfo), 
-		// 	$this->render($data, $pagingInfo), 
-		// 	$pagingInfo->render($data, $pagingInfo)
-		// );
-		
+		// Render the body
 		$html = $this->renderHeader($data, $pagingInfo) . $this->render($data, $pagingInfo) . $pagingInfo->render($data, $pagingInfo);
 		
+		// And process our decorators
 		$html = $this->_processDecorators(
 			$html, 
 			'output', 
@@ -623,7 +707,7 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 			$columns = $this->getColumns();
 		}
 		
-		$id = $this->_dataValue($row, $this->id);
+		$id = $this->getAdapter()->getPrimaryKey($row);//_dataValue($row, $this->id);
 		
 		$html = '';
 		
@@ -979,6 +1063,37 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 	{
 		return $this->_adapter;
 	}
+	
+	public function setAdapter(LBHToolkit_TableMaker_Adapter_Interface $adapter)
+	{
+		$this->_adapter = $adapter;
+	}
+	
+	
+	/**
+	 * setActionController()
+	 *
+	 * @param  Zend_Controller_Action $actionController
+	 * @return Zend_Controller_ActionHelper_Abstract Provides a fluent interface
+	 */
+	public function setActionController(Zend_Controller_Action $actionController = null)
+	{
+		$return = parent::setActionController($actionController);
+		
+		$view = $actionController->view;
+		
+		$columns = $this->getColumns();
+		
+		if (count($columns))
+		{
+			foreach ($this->getColumns() AS $column)
+			{
+				$column->view = $view;
+			}
+		}
+		
+		return $return;
+    }
 	
 	protected function _dataValue(&$data, $column, $value = NULL)
 	{

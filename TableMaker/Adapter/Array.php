@@ -88,7 +88,7 @@ class LBHToolkit_TableMaker_Adapter_Array extends LBHToolkit_TableMaker_Adapter_
 	 */
 	public function getPrimaryKey($row)
 	{
-		return (++$this->_id);
+		return ($this->_id++);
 	}
 	
 	/**

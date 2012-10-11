@@ -30,36 +30,36 @@ abstract class LBHToolkit_TableMaker_Decorator_Abstract
 		
 		if (count($params))
 		{
-			foreach ($params AS &$param)
+			foreach ($params AS $param_name => &$param)
 			{
 				if ($param == '%%row%%')
 				{
 					$new_params['row'] = $replacements['row'];
 					$param = $replacements['row'];
 				}
-				
-				if ($param == '%%id%%')
+				else if ($param == '%%id%%')
 				{
 					$new_params['id'] = $replacements['id'];
 					$param = $replacements['id'];
 				}
-				
-				if ($param == '%%row_value%%')
+				else if ($param == '%%row_value%%')
 				{
 					$new_params['row_value'] = $replacements['row_value'];
 					$param = $replacements['row_value'];
 				}
-				
-				if ($param == '%%tablemaker%%')
+				else if ($param == '%%tablemaker%%')
 				{
 					$new_params['tablemaker'] = $replacements['tablemaker'];
 					$param = $replacements['tablemaker'];
 				}
-				
-				if ($param == '%%html%%')
+				else if ($param == '%%html%%')
 				{
 					$new_params['html'] = $replacements['html'];
 					$param = $replacements['html'];
+				}
+				else if (!is_numeric($param_name) && isset($params[$param_name]))
+				{
+					$new_params[$param_name] = $params[$param_name];
 				}
 			}
 		}
