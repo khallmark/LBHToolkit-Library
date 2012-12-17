@@ -549,6 +549,11 @@ class LBHToolkit_TableMaker extends Zend_Controller_Action_Helper_Abstract imple
 		$pagingInfo = $this->getPagingInfo();
 		$total_count = $this->getAdapter()->getTotalCount();
 		
+		if (count($data) == 0 || $total_count == 0)
+		{
+			return $this->renderEmpty();
+		}
+		
 		// Mark the pagingation to show/hide
 		$pagingInfo->show_pagination = $this->show_pagination;
 		
